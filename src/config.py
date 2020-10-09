@@ -6,11 +6,5 @@ DISPLAY_HEIGHT = int(1080)
 XY_CROP_SNAP_INCREMENT = float(1.0)
 Z_CROP_SNAP_INCREMENT = float(1.0)
 
-# CUBIFICATION CONFIG
-CUBE_DIM_X = int(150)
-CUBE_DIM_Y = int(150)
-CUBE_DIM_Z = int(500)
-
-
 # Data I/O config
 SCANS_DIR = "..\\scans\\"

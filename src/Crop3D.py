@@ -3,6 +3,8 @@ import zStackUtils as zsu
 import cv2
 import math
 import tifffile
+import glob
+from pathlib import Path
 
 # Cropping globals that need to be set at program start
 stackDims = None
@@ -212,3 +214,20 @@ def crop3D(STACK_FULL_PATH, destDir):
     tifffile.imwrite(destDir, croppedStack)
     zsu.print_crop_dims(croppedStackDims)
     return croppedStack
+
+
+def crop_scans_dir():
+
+    STACK_PATHS = glob.glob(config.SCANS_DIR + "*.tif")
+    CROPPED_DIR = Path(config.SCANS_DIR + 'cropped\\')
+    CROPPED_DIR.mkdir(parents=False, exist_ok=False)
+
+    for stackPath in STACK_PATHS:
+        temp = Path(stackPath)
+        stem = temp.stem
+        croppedPath = str(CROPPED_DIR) + "\\" +stem + "_cropped.tif"
+        crop3D(stackPath, croppedPath)
+
+    print("All scans cropped! Have a wonderful day.")
+
+crop_scans_dir()
