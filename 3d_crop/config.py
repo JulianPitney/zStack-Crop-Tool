@@ -5,6 +5,3 @@ DISPLAY_HEIGHT = int(1080)
 # CROPPING CONFIG
 XY_CROP_SNAP_INCREMENT = float(1.0)
 Z_CROP_SNAP_INCREMENT = float(1.0)
-
-# Data I/O config
-SCANS_DIR = "..\\scans\\"

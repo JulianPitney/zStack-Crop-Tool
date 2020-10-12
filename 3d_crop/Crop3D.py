@@ -5,6 +5,8 @@ import math
 import tifffile
 import glob
 from pathlib import Path
+import argparse
+import os
 
 # Cropping globals that need to be set at program start
 stackDims = None
@@ -216,18 +218,32 @@ def crop3D(STACK_FULL_PATH, destDir):
     return croppedStack
 
 
-def crop_scans_dir():
+def main():
 
-    STACK_PATHS = glob.glob(config.SCANS_DIR + "*.tif")
-    CROPPED_DIR = Path(config.SCANS_DIR + 'cropped\\')
-    CROPPED_DIR.mkdir(parents=False, exist_ok=False)
+    parser = argparse.ArgumentParser(description='Parse a directory path pointing to some tif stacks.')
+    parser.add_argument('--tiffs_dir', metavar='TIFFS_DIR', dest='TIFFS_DIR', action='store', required=True, help='Full path to directory where tiff stacks are. This directory should ONLY contain tiff stacks.')
+    args = vars(parser.parse_args())
 
-    for stackPath in STACK_PATHS:
-        temp = Path(stackPath)
-        stem = temp.stem
-        croppedPath = str(CROPPED_DIR) + "\\" +stem + "_cropped.tif"
-        crop3D(stackPath, croppedPath)
+    TIFFS_DIR = args.get('TIFFS_DIR')
+    if not os.path.isdir(TIFFS_DIR):
+        print(TIFFS_DIR + " does not exist. Exiting.")
 
-    print("All scans cropped! Have a wonderful day.")
+    stacks = os.listdir(path=TIFFS_DIR)
+    for stack in stacks:
+        if os.path.isfile(TIFFS_DIR + "\\" + stack) and stack[-4:] == '.tif':
+            continue
+        else:
+            print(TIFFS_DIR + "\\" + stack + " does not exist or does not have the .tif extension. Skipping file.")
+            stacks.remove(stack)
 
-crop_scans_dir()
+    for stack in stacks:
+
+        stackFullPath = TIFFS_DIR + "\\" + stack
+        croppedFullPath = TIFFS_DIR + "\\" + stack[:-4] + "_cropped.tif"
+        crop3D(stackFullPath, croppedFullPath)
+
+    print("All stacks cropped! Have a wonderful day.")
+
+
+if __name__ == '__main__':
+    main()
