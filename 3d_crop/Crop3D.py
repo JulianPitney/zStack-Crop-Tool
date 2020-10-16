@@ -143,20 +143,45 @@ def paint_cropping_overlays(zProj, xProj, colors):
         paint_cropping_text_z(xProj, colors)
 
 
-def crop3D(STACK_FULL_PATH, destDir):
+def crop3D(scanFullPath, cropFullPath, maskFullPath=None):
 
     global stackDims, xProjDims
 
-    print("\nLoading " + str(STACK_FULL_PATH))
-    stack = tifffile.imread(STACK_FULL_PATH)
-    print("Cropping " + str(STACK_FULL_PATH))
-    zProj = zsu.save_and_reload_maxproj(stack)
-    xProj = zsu.save_and_reload_maxproj_x(stack)
-    yProj = zsu.save_and_reload_maxproj_y(stack)
+    print("\nLoading " + str(scanFullPath))
+    scan = tifffile.imread(scanFullPath)
+
+    if maskFullPath != None:
+
+        print("\nLoading " + str(maskFullPath))
+        mask = tifffile.imread(maskFullPath)
+        exit(0)
+
+        # Overlay mask projections here.
+        # Should just be able to perform xyz projections
+        # of each of the masks and then directly overlay
+        # them onto the corresponding projection of the
+        # scan.
+
+
+
+
+
+
+
+
+
+
+
+
+
+    print("Cropping " + str(scanFullPath))
+    zProj = zsu.save_and_reload_maxproj(scan)
+    xProj = zsu.save_and_reload_maxproj_x(scan)
+    yProj = zsu.save_and_reload_maxproj_y(scan)
     zProjClone = zProj.copy()
     xProjClone = xProj.copy()
 
-    stackDims = zsu.gen_stack_dims_dict(stack)
+    stackDims = zsu.gen_stack_dims_dict(scan)
     stackAspectRatio = stackDims['y'] / stackDims['x']
     xProjDims = dict({'x': xProj.shape[0], 'y': xProj.shape[1]})
     xProjAspectRatio = xProjDims['y'] / xProjDims['x']
@@ -211,38 +236,93 @@ def crop3D(STACK_FULL_PATH, destDir):
                 cv2.destroyAllWindows()
                 break
 
-    croppedStack = stack[z0:z1, refPt[0][1]:refPt[1][1], refPt[0][0]:refPt[1][0]]
+    croppedStack = scan[z0:z1, refPt[0][1]:refPt[1][1], refPt[0][0]:refPt[1][0]]
     croppedStackDims = zsu.gen_stack_dims_dict(croppedStack)
-    tifffile.imwrite(destDir, croppedStack)
+    tifffile.imwrite(cropFullPath, croppedStack)
     zsu.print_crop_dims(croppedStackDims)
     return croppedStack
 
 
-def main():
+def get_scan_paths(scansDir):
 
-    parser = argparse.ArgumentParser(description='Parse a directory path pointing to some tif stacks.')
-    parser.add_argument('--tiffs_dir', metavar='TIFFS_DIR', dest='TIFFS_DIR', action='store', required=True, help='Full path to directory where tiff stacks are. This directory should ONLY contain tiff stacks.')
-    args = vars(parser.parse_args())
+    if not os.path.isdir(scansDir):
+        print(scansDir + " does not exist. Exiting.")
+        exit()
 
-    TIFFS_DIR = args.get('TIFFS_DIR')
-    if not os.path.isdir(TIFFS_DIR):
-        print(TIFFS_DIR + " does not exist. Exiting.")
-
-    stacks = os.listdir(path=TIFFS_DIR)
-    for stack in stacks:
-        if os.path.isfile(TIFFS_DIR + "\\" + stack) and stack[-4:] == '.tif':
+    scanPaths = os.listdir(path=scansDir)
+    for scanPath in scanPaths:
+        if os.path.isfile(scansDir + "\\" + scanPath) and scanPath[-4:] == '.tif':
             continue
         else:
-            print(TIFFS_DIR + "\\" + stack + " does not exist or does not have the .tif extension. Skipping file.")
-            stacks.remove(stack)
+            scanPaths.remove(scanPath)
 
-    for stack in stacks:
+    return scanPaths
 
-        stackFullPath = TIFFS_DIR + "\\" + stack
-        croppedFullPath = TIFFS_DIR + "\\" + stack[:-4] + "_cropped.tif"
-        crop3D(stackFullPath, croppedFullPath)
 
-    print("All stacks cropped! Have a wonderful day.")
+# Returns None if no mask directory was provided by CLI interface.
+def get_mask_paths(args):
+
+    maskPaths = None
+
+    if 'MASKS_DIR' in args:
+
+        masksDir = args.get('MASKS_DIR')
+
+        if os.path.isdir(masksDir):
+            maskPaths = os.listdir(path=masksDir)
+
+            for maskPath in maskPaths:
+                if os.path.isfile(masksDir + "\\" + maskPath) and maskPath[-4:] == '.tif':
+                    continue
+                else:
+                    maskPaths.remove(maskPath)
+
+
+    return maskPaths
+
+
+def crop_all_stacks(scanPaths, maskPaths, scansDir, args):
+
+    for i in range(0, len(scanPaths)):
+
+        scanFullPath = scansDir + "\\" + scanPaths[i]
+        croppedFullPath = scansDir + "\\" + scanPaths[i][:-4] + "_cropped.tif"
+
+        if maskPaths != None:
+
+            masksDir = args.get('MASKS_DIR')
+            maskFullPath = masksDir + "\\" + scanPaths[i][:-4] + "_stroke_mask.tif"
+
+            if not os.path.isfile(maskFullPath):
+                print("No file was found at " + maskFullPath + " . Exiting.")
+                exit(0)
+            crop3D(scanFullPath, croppedFullPath, maskFullPath)
+
+        else:
+            crop3D(scanFullPath, croppedFullPath)
+
+
+
+
+
+def main():
+
+    parser = argparse.ArgumentParser(description='This tool allows a user to point to a directory full of tiff stacks and 3DCrop them all one after another.')
+    parser.add_argument('--scans_dir', metavar='SCANS_DIR', dest='SCANS_DIR', action='store', required=True, help='Full path to directory where scan tiff stacks are. This directory should ONLY contain scan tiff stacks.')
+    parser.add_argument('--masks_dir', metavar='MASKS_DIR', dest='MASKS_DIR', action='store', required=False, help='Full path to directory where stroke masks are. Stroke masks should be 8-bit grayscale tiff st'
+                                                                                                                   'acks with the .tif extension. There should be one stroke mask for each scan in the <scans_dir'
+                                                                                                                   '> directory and this pairing should have identical ZYX dimensions. The stroke mask .tifs shou'
+                                                                                                                   'ld be named following this example: If <scans_dir> has a file called scan1.tif, the corresponding stroke mask'
+                                                                                                                   'should be named scan1_stroke_mask.tif')
+    args = vars(parser.parse_args())
+    scansDir = args.get('SCANS_DIR')
+    scanPaths = get_scan_paths(scansDir)
+    maskPaths = get_mask_paths(args)
+    crop_all_stacks(scanPaths, maskPaths, scansDir, args)
+
+
+
+
 
 
 if __name__ == '__main__':
