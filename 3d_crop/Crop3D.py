@@ -149,47 +149,36 @@ def crop3D(scanFullPath, cropFullPath, maskFullPath=None):
 
     print("\nLoading " + str(scanFullPath))
     scan = tifffile.imread(scanFullPath)
+    zProj = zsu.save_and_reload_maxproj(scan)
+    xProj = zsu.save_and_reload_maxproj_x(scan)
+    yProj = zsu.save_and_reload_maxproj_y(scan)
 
+
+    # Add mask if supplied
     if maskFullPath != None:
 
         print("\nLoading " + str(maskFullPath))
         mask = tifffile.imread(maskFullPath)
-        exit(0)
-
-        # Overlay mask projections here.
-        # Should just be able to perform xyz projections
-        # of each of the masks and then directly overlay
-        # them onto the corresponding projection of the
-        # scan.
-
+        zProjMask = zsu.save_and_reload_maxproj(mask)
+        yProjMask = zsu.save_and_reload_maxproj_y(mask)
+        xProjMask = zsu.save_and_reload_maxproj_x(mask)
+        zProj = cv2.addWeighted(zProj, 0.5, zProjMask, 0.5, 0.0)
+        yProj = cv2.addWeighted(yProj, 0.5, yProjMask, 0.5, 0.0)
+        xProj = cv2.addWeighted(xProj, 0.5, xProjMask, 0.5, 0.0)
 
 
 
-
-
-
-
-
-
-
-
-
-    print("Cropping " + str(scanFullPath))
-    zProj = zsu.save_and_reload_maxproj(scan)
-    xProj = zsu.save_and_reload_maxproj_x(scan)
-    yProj = zsu.save_and_reload_maxproj_y(scan)
     zProjClone = zProj.copy()
     xProjClone = xProj.copy()
-
     stackDims = zsu.gen_stack_dims_dict(scan)
     stackAspectRatio = stackDims['y'] / stackDims['x']
     xProjDims = dict({'x': xProj.shape[0], 'y': xProj.shape[1]})
     xProjAspectRatio = xProjDims['y'] / xProjDims['x']
 
     # Cropping config
-    CROP_WINDOW_NAME_XY = "3D Crop Utility XY"
-    CROP_WINDOW_NAME_Z = "3D Crop Utility Z"
-    CROP_WINDOW_NAME_YPROJ = "Y Projection"
+    CROP_WINDOW_Z_PROJ = "CROP_Z_PROJ"
+    CROP_WINDOW_X_PROJ = "CROP_X_PROJ"
+    CROP_WINDOW_Y_PROJ = "CROP_Y_PROJ"
     DISPLAY_WIDTH = config.DISPLAY_WIDTH
     DISPLAY_HEIGHT = config.DISPLAY_HEIGHT
     CROP_WINDOW_WIDTH_XY = int(DISPLAY_HEIGHT - 100 * stackAspectRatio)
@@ -199,13 +188,19 @@ def crop3D(scanFullPath, cropFullPath, maskFullPath=None):
 
 
 
-    cv2.namedWindow(CROP_WINDOW_NAME_XY, cv2.WINDOW_NORMAL)
-    cv2.namedWindow(CROP_WINDOW_NAME_Z, cv2.WINDOW_NORMAL)
-    cv2.namedWindow(CROP_WINDOW_NAME_YPROJ, cv2.WINDOW_NORMAL)
+    cv2.namedWindow(CROP_WINDOW_Z_PROJ, cv2.WINDOW_NORMAL)
+    cv2.namedWindow(CROP_WINDOW_X_PROJ, cv2.WINDOW_NORMAL)
+    cv2.namedWindow(CROP_WINDOW_Y_PROJ, cv2.WINDOW_NORMAL)
+    cv2.namedWindow('MASK_Z_PROJ', cv2.WINDOW_NORMAL)
+    cv2.namedWindow('MASK_Y_PROJ', cv2.WINDOW_NORMAL)
+    cv2.namedWindow('MASK_X_PROJ', cv2.WINDOW_NORMAL)
+    cv2.imshow('MASK_Z_PROJ', zProjMask)
+    cv2.imshow('MASK_Y_PROJ', yProjMask)
+    cv2.imshow('MASK_X_PROJ', xProjMask)
 
-    cv2.setMouseCallback(CROP_WINDOW_NAME_XY, click_and_crop)
-    cv2.setMouseCallback(CROP_WINDOW_NAME_Z, click_and_z_crop)
-
+    cv2.setMouseCallback(CROP_WINDOW_Z_PROJ, click_and_crop)
+    cv2.setMouseCallback(CROP_WINDOW_X_PROJ, click_and_z_crop)
+    print("Cropping " + str(scanFullPath))
     while True:
 
         # Render the cropping overlays for next frames
@@ -213,9 +208,10 @@ def crop3D(scanFullPath, cropFullPath, maskFullPath=None):
         paint_cropping_overlays(zProj, xProj, colors)
 
         # Display the frames with cropping overlays
-        cv2.imshow(CROP_WINDOW_NAME_XY, zProj)
-        cv2.imshow(CROP_WINDOW_NAME_Z, xProj)
-        cv2.imshow(CROP_WINDOW_NAME_YPROJ, yProj)
+        cv2.imshow(CROP_WINDOW_Z_PROJ, zProj)
+        cv2.imshow(CROP_WINDOW_X_PROJ, xProj)
+        cv2.imshow(CROP_WINDOW_Y_PROJ, yProj)
+
         key = cv2.waitKey(1) & 0xFF
 
         # Wipe the overlay so next overlay draw has fresh frame
