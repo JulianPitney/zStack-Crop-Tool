@@ -109,8 +109,8 @@ def paint_cropping_text_xy(zProj, colors):
     bg = np.full((zProj.shape), bg_color, dtype=np.uint8)
     cv2.putText(bg, "xSize=" + str(refPt[1][0] - refPt[0][0]), (40, 110), cv2.FONT_HERSHEY_SIMPLEX, 4.0, colors[0], 8)
     cv2.putText(bg, "ySize=" + str(refPt[1][1] - refPt[0][1]), (40, 110+120), cv2.FONT_HERSHEY_SIMPLEX, 4.0, colors[0], 8)
-    x,y,w,h = cv2.boundingRect(bg[:, :, 2])
-    zProj[y:y + h, x:x + w] = bg[y:y + h, x:x + w]
+    x, y, w, h = cv2.boundingRect(bg[:, :, 2])
+    zProj[y:y + h + 10, x:x + w + 20] = bg[y:y + h + 10, x:x + w + 20]
 
 
 
@@ -121,8 +121,11 @@ def paint_cropping_lines_xy(zProj, colors):
 
 def paint_cropping_text_z(xProj, colors):
 
-    cv2.putText(xProj, "zSize=" + str(z1 - z0), (40, 50), cv2.FONT_HERSHEY_SIMPLEX, 2.0, colors[2], 4)
-
+    bg_color = (0, 0, 0)
+    bg = np.full((xProj.shape), bg_color, dtype=np.uint8)
+    cv2.putText(bg, "zSize=" + str(z1 - z0), (40, 50), cv2.FONT_HERSHEY_SIMPLEX, 2.0, colors[2], 4)
+    x, y, w, h = cv2.boundingRect(bg[:, :, 2])
+    xProj[y:y + h + 10, x:x + w + 20] = bg[y:y + h + 10, x:x + w + 20]
 
 def paint_cropping_line_lmb_z(xProj, colors):
 
