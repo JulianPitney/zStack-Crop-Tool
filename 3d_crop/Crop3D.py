@@ -84,9 +84,9 @@ def click_and_z_crop(event, x, y, flags, param):
 
 def select_cropping_colors():
 
-    XYTextColor = (236, 43, 146)
+    XYTextColor = (255, 255, 255)
     XYCropLineColor = (0, 255, 0)
-    ZTextColor = (236, 43, 146)
+    ZTextColor = (255, 255, 255)
     ZCropLineColor = (0, 255, 0)
 
     # XY crop conditions not OK
