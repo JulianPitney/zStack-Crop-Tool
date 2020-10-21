@@ -2,6 +2,7 @@ import config
 import zStackUtils as zsu
 import cv2
 import math
+import numpy as np
 import tifffile
 import glob
 from pathlib import Path
@@ -103,8 +104,14 @@ def select_cropping_colors():
 
 def paint_cropping_text_xy(zProj, colors):
 
-    cv2.putText(zProj, "xSize=" + str(refPt[1][0] - refPt[0][0]), (40, 110), cv2.FONT_HERSHEY_SIMPLEX, 4.0, colors[0], 8)
-    cv2.putText(zProj, "ySize=" + str(refPt[1][1] - refPt[0][1]), (40, 110+120), cv2.FONT_HERSHEY_SIMPLEX, 4.0, colors[0], 8)
+
+    bg_color = (0, 0, 0)
+    bg = np.full((zProj.shape), bg_color, dtype=np.uint8)
+    cv2.putText(bg, "xSize=" + str(refPt[1][0] - refPt[0][0]), (40, 110), cv2.FONT_HERSHEY_SIMPLEX, 4.0, colors[0], 8)
+    cv2.putText(bg, "ySize=" + str(refPt[1][1] - refPt[0][1]), (40, 110+120), cv2.FONT_HERSHEY_SIMPLEX, 4.0, colors[0], 8)
+    x,y,w,h = cv2.boundingRect(bg[:, :, 2])
+    zProj[y:y + h, x:x + w] = bg[y:y + h, x:x + w]
+
 
 
 def paint_cropping_lines_xy(zProj, colors):
