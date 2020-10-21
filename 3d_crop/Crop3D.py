@@ -201,12 +201,6 @@ def crop3D(scanFullPath, cropFullPath, maskFullPath=None):
     cv2.namedWindow(CROP_WINDOW_Z_PROJ, cv2.WINDOW_NORMAL)
     cv2.namedWindow(CROP_WINDOW_X_PROJ, cv2.WINDOW_NORMAL)
     cv2.namedWindow(CROP_WINDOW_Y_PROJ, cv2.WINDOW_NORMAL)
-    cv2.namedWindow('MASK_Z_PROJ', cv2.WINDOW_NORMAL)
-    cv2.namedWindow('MASK_Y_PROJ', cv2.WINDOW_NORMAL)
-    cv2.namedWindow('MASK_X_PROJ', cv2.WINDOW_NORMAL)
-    cv2.imshow('MASK_Z_PROJ', zProjMask)
-    cv2.imshow('MASK_Y_PROJ', yProjMask)
-    cv2.imshow('MASK_X_PROJ', xProjMask)
 
     cv2.setMouseCallback(CROP_WINDOW_Z_PROJ, click_and_crop)
     cv2.setMouseCallback(CROP_WINDOW_X_PROJ, click_and_z_crop)
