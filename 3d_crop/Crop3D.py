@@ -1,6 +1,5 @@
 import config
 import zStackUtils as zsu
-import boundingbox
 import cv2
 import math
 import numpy as np
@@ -9,8 +8,6 @@ import glob
 from pathlib import Path
 import argparse
 import os
-import sys
-sys.setrecursionlimit(10 ** 9)
 
 # Cropping globals that need to be set at program start
 stackDims = None
@@ -205,11 +202,6 @@ def crop3D(scanFullPath, cropFullPath, maskFullPath=None):
     cv2.namedWindow(CROP_WINDOW_X_PROJ, cv2.WINDOW_NORMAL)
     cv2.namedWindow(CROP_WINDOW_Y_PROJ, cv2.WINDOW_NORMAL)
 
-    rectI = boundingbox.dragRect
-    boundingbox.init(rectI, zProj, CROP_WINDOW_Z_PROJ, stackDims['x'], stackDims['y'])
-    cv2.setMouseCallback(CROP_WINDOW_Z_PROJ, boundingbox.dragrect, rectI)
-
-
     cv2.setMouseCallback(CROP_WINDOW_Z_PROJ, click_and_crop)
     cv2.setMouseCallback(CROP_WINDOW_X_PROJ, click_and_z_crop)
     print("Cropping " + str(scanFullPath))
@@ -224,8 +216,6 @@ def crop3D(scanFullPath, cropFullPath, maskFullPath=None):
         cv2.imshow(CROP_WINDOW_X_PROJ, xProj)
         cv2.imshow(CROP_WINDOW_Y_PROJ, yProj)
         key = cv2.waitKey(1) & 0xFF
-
-        print(rectI.outRect)
 
         # Wipe the overlay so next overlay draw has fresh frame
         zProj = zProjClone.copy()
