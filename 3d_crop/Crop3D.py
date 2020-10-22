@@ -8,6 +8,10 @@ import glob
 from pathlib import Path
 import argparse
 import os
+import sys
+sys.setrecursionlimit(10 ** 9)
+import selectinwindow
+
 
 # Cropping globals that need to be set at program start
 stackDims = None
@@ -197,19 +201,24 @@ def crop3D(scanFullPath, cropFullPath, maskFullPath=None):
     CROP_WINDOW_HEIGHT_Z = int(DISPLAY_WIDTH - 100 / xProjAspectRatio)
 
 
-
     cv2.namedWindow(CROP_WINDOW_Z_PROJ, cv2.WINDOW_NORMAL)
     cv2.namedWindow(CROP_WINDOW_X_PROJ, cv2.WINDOW_NORMAL)
     cv2.namedWindow(CROP_WINDOW_Y_PROJ, cv2.WINDOW_NORMAL)
 
-    cv2.setMouseCallback(CROP_WINDOW_Z_PROJ, click_and_crop)
+
+    rectI = selectinwindow.dragRect
+    selectinwindow.init(rectI, zProj, CROP_WINDOW_Z_PROJ, stackDims['x'], stackDims['y'])
+    cv2.setMouseCallback(CROP_WINDOW_Z_PROJ, selectinwindow.dragrect, rectI)
+
+
+    #cv2.setMouseCallback(CROP_WINDOW_Z_PROJ, click_and_crop)
     cv2.setMouseCallback(CROP_WINDOW_X_PROJ, click_and_z_crop)
     print("Cropping " + str(scanFullPath))
     while True:
 
         # Render the cropping overlays for next frames
-        colors = select_cropping_colors()
-        paint_cropping_overlays(zProj, xProj, colors)
+        #colors = select_cropping_colors()
+        #paint_cropping_overlays(zProj, xProj, colors)
 
         # Display the frames with cropping overlays
         cv2.imshow(CROP_WINDOW_Z_PROJ, zProj)
