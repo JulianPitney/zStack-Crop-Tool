@@ -12,10 +12,7 @@ import sys
 sys.setrecursionlimit(10 ** 9)
 import selectinwindow
 
-
-# Cropping globals that need to be set at program start
 stackDims = None
-xProjDims = None
 
 # Cropping globals for cv2 mouse callbacks
 refPt = [(0, 0), (0, 0)]
@@ -131,27 +128,27 @@ def paint_cropping_text_z(xProj, colors):
     x, y, w, h = cv2.boundingRect(bg[:, :, 2])
     xProj[y:y + h + 10, x:x + w + 20] = bg[y:y + h + 10, x:x + w + 20]
 
-def paint_cropping_line_lmb_z(xProj, colors):
+def paint_cropping_line_lmb_z(xProj, colors, stackDims):
 
     cv2.line(xProj, (0, z0), (stackDims['x'], z0), colors[3], 2)
 
 
-def paint_cropping_line_rmb_z(xProj, colors):
+def paint_cropping_line_rmb_z(xProj, colors, stackDims):
 
     cv2.line(xProj, (0, z1), (stackDims['x'], z1), colors[3], 2)
 
 
-def paint_cropping_overlays(zProj, xProj, colors):
+def paint_cropping_overlays(zProj, xProj, colors, stackDims):
 
     if XY_CROPPING_WINDOW_ACTIVE:
         paint_cropping_lines_xy(zProj, colors)
         paint_cropping_text_xy(zProj, colors)
 
     if Z_CROPPING_WINDOW_ACTIVE_RIGHT:
-        paint_cropping_line_rmb_z(xProj, colors)
+        paint_cropping_line_rmb_z(xProj, colors, stackDims)
 
     if Z_CROPPING_WINDOW_ACTIVE_LEFT:
-        paint_cropping_line_lmb_z(xProj, colors)
+        paint_cropping_line_lmb_z(xProj, colors, stackDims)
 
     if Z_CROPPING_WINDOW_ACTIVE_LEFT and Z_CROPPING_WINDOW_ACTIVE_RIGHT:
         paint_cropping_text_z(xProj, colors)
@@ -159,10 +156,11 @@ def paint_cropping_overlays(zProj, xProj, colors):
 
 def crop3D(scanFullPath, cropFullPath, maskFullPath=None):
 
-    global stackDims, xProjDims
+    global stackDims
 
     print("\nLoading " + str(scanFullPath))
     scan = tifffile.imread(scanFullPath)
+    stackDims = zsu.gen_stack_dims_dict(scan)
     zProj = zsu.save_and_reload_maxproj(scan)
     xProj = zsu.save_and_reload_maxproj_x(scan)
     yProj = zsu.save_and_reload_maxproj_y(scan)
@@ -176,6 +174,10 @@ def crop3D(scanFullPath, cropFullPath, maskFullPath=None):
         zProjMask = zsu.save_and_reload_maxproj(mask)
         yProjMask = zsu.save_and_reload_maxproj_y(mask)
         xProjMask = zsu.save_and_reload_maxproj_x(mask)
+        zProjMask = cv2.resize(zProjMask, (stackDims['x'], stackDims['y']), interpolation=cv2.INTER_CUBIC)
+        yProjMask = cv2.resize(yProjMask, (stackDims['x'], stackDims['z']), interpolation=cv2.INTER_CUBIC)
+        xProjMask = cv2.resize(xProjMask, (stackDims['y'], stackDims['z']), interpolation=cv2.INTER_CUBIC)
+
         zProj = cv2.addWeighted(zProj, 0.5, zProjMask, 0.5, 0.0)
         yProj = cv2.addWeighted(yProj, 0.5, yProjMask, 0.5, 0.0)
         xProj = cv2.addWeighted(xProj, 0.5, xProjMask, 0.5, 0.0)
@@ -184,7 +186,6 @@ def crop3D(scanFullPath, cropFullPath, maskFullPath=None):
 
     zProjClone = zProj.copy()
     xProjClone = xProj.copy()
-    stackDims = zsu.gen_stack_dims_dict(scan)
     stackAspectRatio = stackDims['y'] / stackDims['x']
     xProjDims = dict({'x': xProj.shape[0], 'y': xProj.shape[1]})
     xProjAspectRatio = xProjDims['y'] / xProjDims['x']
@@ -218,13 +219,14 @@ def crop3D(scanFullPath, cropFullPath, maskFullPath=None):
 
         # Render the cropping overlays for next frames
         #colors = select_cropping_colors()
-        #paint_cropping_overlays(zProj, xProj, colors)
+        #paint_cropping_overlays(zProj, xProj, colors, stackDims)
 
         # Display the frames with cropping overlays
         cv2.imshow(CROP_WINDOW_Z_PROJ, zProj)
         cv2.imshow(CROP_WINDOW_X_PROJ, xProj)
         cv2.imshow(CROP_WINDOW_Y_PROJ, yProj)
         key = cv2.waitKey(1) & 0xFF
+        print(rectI.outRect)
 
         # Wipe the overlay so next overlay draw has fresh frame
         zProj = zProjClone.copy()

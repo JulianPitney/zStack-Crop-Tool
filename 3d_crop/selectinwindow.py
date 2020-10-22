@@ -352,7 +352,7 @@ def clearCanvasNDraw(dragObj):
     tmp = dragObj.image.copy()
     cv2.rectangle(tmp, (dragObj.outRect.x, dragObj.outRect.y),
                   (dragObj.outRect.x + dragObj.outRect.w,
-                   dragObj.outRect.y + dragObj.outRect.h), (0, 255, 0), 2)
+                   dragObj.outRect.y + dragObj.outRect.h), (0, 255, 0), 4)
     drawSelectMarkers(tmp, dragObj)
     cv2.imshow(dragObj.wname, tmp)
     cv2.waitKey()
@@ -362,53 +362,53 @@ def clearCanvasNDraw(dragObj):
 
 def drawSelectMarkers(image, dragObj):
     # Top-Left
-    cv2.rectangle(image, (dragObj.outRect.x - dragObj.sBlk,
-                          dragObj.outRect.y - dragObj.sBlk),
-                  (dragObj.outRect.x - dragObj.sBlk + dragObj.sBlk * 2,
-                   dragObj.outRect.y - dragObj.sBlk + dragObj.sBlk * 2),
-                  (0, 255, 0), 2)
+    cv2.rectangle(image, (int(dragObj.outRect.x - dragObj.sBlk),
+                          int(dragObj.outRect.y - dragObj.sBlk)),
+                  (int(dragObj.outRect.x - dragObj.sBlk + dragObj.sBlk * 2),
+                   int(dragObj.outRect.y - dragObj.sBlk + dragObj.sBlk * 2)),
+                  (0, 255, 0), 4)
     # Top-Rigth
-    cv2.rectangle(image, (dragObj.outRect.x + dragObj.outRect.w - dragObj.sBlk,
-                          dragObj.outRect.y - dragObj.sBlk),
-                  (dragObj.outRect.x + dragObj.outRect.w - dragObj.sBlk + dragObj.sBlk * 2,
-                   dragObj.outRect.y - dragObj.sBlk + dragObj.sBlk * 2),
-                  (0, 255, 0), 2)
+    cv2.rectangle(image, (int(dragObj.outRect.x + dragObj.outRect.w - dragObj.sBlk),
+                          int(dragObj.outRect.y - dragObj.sBlk)),
+                  (int(dragObj.outRect.x + dragObj.outRect.w - dragObj.sBlk + dragObj.sBlk * 2),
+                   int(dragObj.outRect.y - dragObj.sBlk + dragObj.sBlk * 2)),
+                  (0, 255, 0), 4)
     # Bottom-Left
-    cv2.rectangle(image, (dragObj.outRect.x - dragObj.sBlk,
-                          dragObj.outRect.y + dragObj.outRect.h - dragObj.sBlk),
-                  (dragObj.outRect.x - dragObj.sBlk + dragObj.sBlk * 2,
-                   dragObj.outRect.y + dragObj.outRect.h - dragObj.sBlk + dragObj.sBlk * 2),
-                  (0, 255, 0), 2)
+    cv2.rectangle(image, (int(dragObj.outRect.x - dragObj.sBlk),
+                          int(dragObj.outRect.y + dragObj.outRect.h - dragObj.sBlk)),
+                  (int(dragObj.outRect.x - dragObj.sBlk + dragObj.sBlk * 2),
+                   int(dragObj.outRect.y + dragObj.outRect.h - dragObj.sBlk + dragObj.sBlk * 2)),
+                  255, 4)
     # Bottom-Right
-    cv2.rectangle(image, (dragObj.outRect.x + dragObj.outRect.w - dragObj.sBlk,
-                          dragObj.outRect.y + dragObj.outRect.h - dragObj.sBlk),
-                  (dragObj.outRect.x + dragObj.outRect.w - dragObj.sBlk + dragObj.sBlk * 2,
-                   dragObj.outRect.y + dragObj.outRect.h - dragObj.sBlk + dragObj.sBlk * 2),
-                  (0, 255, 0), 2)
+    cv2.rectangle(image, (int(dragObj.outRect.x + dragObj.outRect.w - dragObj.sBlk),
+                          int(dragObj.outRect.y + dragObj.outRect.h - dragObj.sBlk)),
+                  (int(dragObj.outRect.x + dragObj.outRect.w - dragObj.sBlk + dragObj.sBlk * 2),
+                   int(dragObj.outRect.y + dragObj.outRect.h - dragObj.sBlk + dragObj.sBlk * 2)),
+                  (0, 255, 0), 4)
 
     # Top-Mid
-    cv2.rectangle(image, (dragObj.outRect.x + dragObj.outRect.w / 2 - dragObj.sBlk,
-                          dragObj.outRect.y - dragObj.sBlk),
-                  (dragObj.outRect.x + dragObj.outRect.w / 2 - dragObj.sBlk + dragObj.sBlk * 2,
-                   dragObj.outRect.y - dragObj.sBlk + dragObj.sBlk * 2),
-                  (0, 255, 0), 2)
+    cv2.rectangle(image, (int(dragObj.outRect.x + dragObj.outRect.w / 2 - dragObj.sBlk),
+                          int(dragObj.outRect.y - dragObj.sBlk)),
+                  (int(dragObj.outRect.x + dragObj.outRect.w / 2 - dragObj.sBlk + dragObj.sBlk * 2),
+                   int(dragObj.outRect.y - dragObj.sBlk + dragObj.sBlk * 2)),
+                  (0, 255, 0), 4)
     # Bottom-Mid
-    cv2.rectangle(image, (dragObj.outRect.x + dragObj.outRect.w / 2 - dragObj.sBlk,
-                          dragObj.outRect.y + dragObj.outRect.h - dragObj.sBlk),
-                  (dragObj.outRect.x + dragObj.outRect.w / 2 - dragObj.sBlk + dragObj.sBlk * 2,
-                   dragObj.outRect.y + dragObj.outRect.h - dragObj.sBlk + dragObj.sBlk * 2),
-                  (0, 255, 0), 2)
+    cv2.rectangle(image, (int(dragObj.outRect.x + dragObj.outRect.w / 2 - dragObj.sBlk),
+                          int(dragObj.outRect.y + dragObj.outRect.h - dragObj.sBlk)),
+                  (int(dragObj.outRect.x + dragObj.outRect.w / 2 - dragObj.sBlk + dragObj.sBlk * 2),
+                   int(dragObj.outRect.y + dragObj.outRect.h - dragObj.sBlk + dragObj.sBlk * 2)),
+                  (0, 255, 0), 4)
     # Left-Mid
-    cv2.rectangle(image, (dragObj.outRect.x - dragObj.sBlk,
-                          dragObj.outRect.y + dragObj.outRect.h / 2 - dragObj.sBlk),
-                  (dragObj.outRect.x - dragObj.sBlk + dragObj.sBlk * 2,
-                   dragObj.outRect.y + dragObj.outRect.h / 2 - dragObj.sBlk + dragObj.sBlk * 2),
-                  (0, 255, 0), 2)
+    cv2.rectangle(image, (int(dragObj.outRect.x - dragObj.sBlk),
+                          int(dragObj.outRect.y + dragObj.outRect.h / 2 - dragObj.sBlk)),
+                  (int(dragObj.outRect.x - dragObj.sBlk + dragObj.sBlk * 2),
+                   int(dragObj.outRect.y + dragObj.outRect.h / 2 - dragObj.sBlk + dragObj.sBlk * 2)),
+                  (0, 255, 0), 4)
     # Right-Mid
-    cv2.rectangle(image, (dragObj.outRect.x + dragObj.outRect.w - dragObj.sBlk,
-                          dragObj.outRect.y + dragObj.outRect.h / 2 - dragObj.sBlk),
-                  (dragObj.outRect.x + dragObj.outRect.w - dragObj.sBlk + dragObj.sBlk * 2,
-                   dragObj.outRect.y + dragObj.outRect.h / 2 - dragObj.sBlk + dragObj.sBlk * 2),
-                  (0, 255, 0), 2)
+    cv2.rectangle(image, (int(dragObj.outRect.x + dragObj.outRect.w - dragObj.sBlk),
+                          int(dragObj.outRect.y + dragObj.outRect.h / 2 - dragObj.sBlk)),
+                  (int(dragObj.outRect.x + dragObj.outRect.w - dragObj.sBlk + dragObj.sBlk * 2),
+                   int(dragObj.outRect.y + dragObj.outRect.h / 2 - dragObj.sBlk + dragObj.sBlk * 2)),
+                  (0, 255, 0), 4)
 
 # enddef
