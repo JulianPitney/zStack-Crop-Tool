@@ -1,61 +1,32 @@
-import config
 import zStackUtils as zsu
 import cv2
 import math
 import numpy as np
 import tifffile
-import glob
-from pathlib import Path
 import argparse
 import os
 import sys
-sys.setrecursionlimit(10 ** 9)
 import selectinwindow
+from win32api import GetSystemMetrics
+sys.setrecursionlimit(10 ** 9)
+
 
 stackDims = None
+xProjDims = None
 
 # Cropping globals for cv2 mouse callbacks
-refPt = [(0, 0), (0, 0)]
 z0 = 0
 z1 = 0
-XY_CROPPING_WINDOW_LMB_DOWN = False
-XY_CROPPING_WINDOW_ACTIVE = False
 Z_CROPPING_WINDOW_ACTIVE_LEFT = False
 Z_CROPPING_WINDOW_ACTIVE_RIGHT = False
 
 
-def calc_xy_crop_snap_value(x):
-
-    return int(math.ceil(x / config.XY_CROP_SNAP_INCREMENT)) * int(config.XY_CROP_SNAP_INCREMENT)
-
-
 def calc_z_crop_snap_value(x):
 
-    return int(math.ceil(x / config.Z_CROP_SNAP_INCREMENT)) * int(config.Z_CROP_SNAP_INCREMENT)
-
-
-def click_and_crop(event, x, y, flags, param):
-
-    global refPt, XY_CROPPING_WINDOW_ACTIVE, XY_CROPPING_WINDOW_LMB_DOWN, stackDims
-
-    if event == cv2.EVENT_LBUTTONDOWN:
-        refPt[0] = refPt[1] = (calc_xy_crop_snap_value(x), calc_xy_crop_snap_value(y))
-        XY_CROPPING_WINDOW_ACTIVE = True
-        XY_CROPPING_WINDOW_LMB_DOWN = True
-
-    if event == cv2.EVENT_MOUSEMOVE and XY_CROPPING_WINDOW_LMB_DOWN:
-
-        # TODO detect if cropping has gone outside bounds of scan
-        x = calc_xy_crop_snap_value(x)
-        y = calc_xy_crop_snap_value(y)
-
-        if x > stackDims['x'] or y > stackDims['y']:
-            pass
-        else:
-            refPt[1] = (x, y)
-
-    if event == cv2.EVENT_LBUTTONUP and XY_CROPPING_WINDOW_LMB_DOWN:
-        XY_CROPPING_WINDOW_LMB_DOWN = False
+    # CROPPING CONFIG
+    XY_CROP_SNAP_INCREMENT = float(1.0)
+    Z_CROP_SNAP_INCREMENT = float(1.0)
+    return int(math.ceil(x / Z_CROP_SNAP_INCREMENT)) * int(Z_CROP_SNAP_INCREMENT)
 
 
 def click_and_z_crop(event, x, y, flags, param):
@@ -77,6 +48,7 @@ def click_and_z_crop(event, x, y, flags, param):
         temp = calc_z_crop_snap_value(y)
 
         if temp > xProjDims['y']:
+
             pass
         else:
             Z_CROPPING_WINDOW_ACTIVE_RIGHT = True
@@ -85,64 +57,39 @@ def click_and_z_crop(event, x, y, flags, param):
 
 def select_cropping_colors():
 
-    XYTextColor = (255, 255, 255)
-    XYCropLineColor = (0, 255, 0)
     ZTextColor = (255, 255, 255)
     ZCropLineColor = (0, 255, 0)
-
-    # XY crop conditions not OK
-    if refPt[0][0] >= refPt[1][0] or refPt[0][1] >= refPt[1][1]:
-        XYTextColor = (0, 0, 255)
-        XYCropLineColor = (0, 0, 255)
 
     # Z crop conditions not OK
     if z0 >= z1:
         ZTextColor = (0, 0, 255)
         ZCropLineColor = (0, 0, 255)
 
-    return [XYTextColor, XYCropLineColor, ZTextColor, ZCropLineColor]
+    return [ZTextColor, ZCropLineColor]
 
 
-def paint_cropping_text_xy(zProj, colors):
-
-
-    bg_color = (0, 0, 0)
-    bg = np.full((zProj.shape), bg_color, dtype=np.uint8)
-    cv2.putText(bg, "xSize=" + str(refPt[1][0] - refPt[0][0]), (40, 110), cv2.FONT_HERSHEY_SIMPLEX, 4.0, colors[0], 8)
-    cv2.putText(bg, "ySize=" + str(refPt[1][1] - refPt[0][1]), (40, 110+120), cv2.FONT_HERSHEY_SIMPLEX, 4.0, colors[0], 8)
-    x, y, w, h = cv2.boundingRect(bg[:, :, 2])
-    zProj[y:y + h + 10, x:x + w + 20] = bg[y:y + h + 10, x:x + w + 20]
-
-
-
-def paint_cropping_lines_xy(zProj, colors):
-
-    cv2.rectangle(zProj, refPt[0], refPt[1], colors[1], 8)
-
-
-def paint_cropping_text_z(xProj, colors):
+def paint_cropping_text_z(xyProj, colors):
 
     bg_color = (0, 0, 0)
-    bg = np.full((xProj.shape), bg_color, dtype=np.uint8)
-    cv2.putText(bg, "zSize=" + str(z1 - z0), (40, 50), cv2.FONT_HERSHEY_SIMPLEX, 2.0, colors[2], 4)
+
+    bg = np.full((xyProj.shape), bg_color, dtype=np.uint8)
+    cv2.putText(bg, "zSize=" + str(z1 - z0), (40, 50), cv2.FONT_HERSHEY_SIMPLEX, 2.0, colors[0], 4)
     x, y, w, h = cv2.boundingRect(bg[:, :, 2])
-    xProj[y:y + h + 10, x:x + w + 20] = bg[y:y + h + 10, x:x + w + 20]
+    xyProj[y:y + h + 10, x:x + w + 20] = bg[y:y + h + 10, x:x + w + 20]
+
+
 
 def paint_cropping_line_lmb_z(xProj, colors, stackDims):
 
-    cv2.line(xProj, (0, z0), (stackDims['x'], z0), colors[3], 2)
+    cv2.line(xProj, (0, z0), (stackDims['x'] + stackDims['y'], z0), colors[1], 2)
 
 
 def paint_cropping_line_rmb_z(xProj, colors, stackDims):
 
-    cv2.line(xProj, (0, z1), (stackDims['x'], z1), colors[3], 2)
+    cv2.line(xProj, (0, z1), (stackDims['x'] + stackDims['y'], z1), colors[1], 2)
 
 
-def paint_cropping_overlays(zProj, xProj, colors, stackDims):
-
-    if XY_CROPPING_WINDOW_ACTIVE:
-        paint_cropping_lines_xy(zProj, colors)
-        paint_cropping_text_xy(zProj, colors)
+def paint_cropping_overlays(xProj, colors, stackDims):
 
     if Z_CROPPING_WINDOW_ACTIVE_RIGHT:
         paint_cropping_line_rmb_z(xProj, colors, stackDims)
@@ -156,15 +103,15 @@ def paint_cropping_overlays(zProj, xProj, colors, stackDims):
 
 def crop3D(scanFullPath, cropFullPath, maskFullPath=None):
 
-    global stackDims
+    global stackDims, xProjDims
 
     print("\nLoading " + str(scanFullPath))
     scan = tifffile.imread(scanFullPath)
-    stackDims = zsu.gen_stack_dims_dict(scan)
     zProj = zsu.save_and_reload_maxproj(scan)
     xProj = zsu.save_and_reload_maxproj_x(scan)
     yProj = zsu.save_and_reload_maxproj_y(scan)
-
+    stackDims = zsu.gen_stack_dims_dict(scan)
+    xProjDims = {'x': stackDims['y'], 'y': stackDims['z']}
 
     # Add mask if supplied
     if maskFullPath != None:
@@ -183,54 +130,46 @@ def crop3D(scanFullPath, cropFullPath, maskFullPath=None):
         xProj = cv2.addWeighted(xProj, 0.5, xProjMask, 0.5, 0.0)
 
 
+    # MERGE X AND Y PROJECTIONS INTO 1 MAT
+    xyProjPreAlloc = np.empty((stackDims['z'], stackDims['x'] + stackDims['y'], 3), dtype=np.uint8)
+    xyProjPreAlloc[:, 0:stackDims['y'], :] = xProj
+    xyProjPreAlloc[:, stackDims['y']:, :] = yProj
+    xyProj = xyProjPreAlloc
 
-    zProjClone = zProj.copy()
-    xProjClone = xProj.copy()
-    stackAspectRatio = stackDims['y'] / stackDims['x']
-    xProjDims = dict({'x': xProj.shape[0], 'y': xProj.shape[1]})
-    xProjAspectRatio = xProjDims['y'] / xProjDims['x']
+    bg_color = (0, 0, 0)
+    bg = np.full((xyProj.shape), bg_color, dtype=np.uint8)
+    cv2.putText(bg, "X Projection", (int(stackDims['x'] / 2) - 500, 50), cv2.FONT_HERSHEY_SIMPLEX, 2.0, (255, 255, 255), 4)
+    x, y, w, h = cv2.boundingRect(bg[:, :, 2])
+    xyProj[y:y + h + 10, x:x + w + 20] = bg[y:y + h + 10, x:x + w + 20]
+
+    bg = np.full((xyProj.shape), bg_color, dtype=np.uint8)
+    cv2.putText(bg, "Y Projection", (int(stackDims['x'] + (stackDims['y'] / 2)) - 500, 50), cv2.FONT_HERSHEY_SIMPLEX, 2.0, (255, 255, 255), 4)
+    x, y, w, h = cv2.boundingRect(bg[:, :, 2])
+    xyProj[y:y + h + 10, x:x + w + 20] = bg[y:y + h + 10, x:x + w + 20]
+
+    xyProjClone = xyProj.copy()
+
 
     # Cropping config
     CROP_WINDOW_Z_PROJ = "CROP_Z_PROJ"
-    CROP_WINDOW_X_PROJ = "CROP_X_PROJ"
-    CROP_WINDOW_Y_PROJ = "CROP_Y_PROJ"
-    DISPLAY_WIDTH = config.DISPLAY_WIDTH
-    DISPLAY_HEIGHT = config.DISPLAY_HEIGHT
-    CROP_WINDOW_WIDTH_XY = int(DISPLAY_HEIGHT - 100 * stackAspectRatio)
-    CROP_WINDOW_HEIGHT_XY = DISPLAY_HEIGHT - 100
-    CROP_WINDOW_WIDTH_Z = DISPLAY_WIDTH - 100
-    CROP_WINDOW_HEIGHT_Z = int(DISPLAY_WIDTH - 100 / xProjAspectRatio)
-
-
-    cv2.namedWindow(CROP_WINDOW_Z_PROJ, cv2.WINDOW_NORMAL)
-    cv2.namedWindow(CROP_WINDOW_X_PROJ, cv2.WINDOW_NORMAL)
-    cv2.namedWindow(CROP_WINDOW_Y_PROJ, cv2.WINDOW_NORMAL)
-
-
-    rectI = selectinwindow.dragRect
-    selectinwindow.init(rectI, zProj, CROP_WINDOW_Z_PROJ, stackDims['x'], stackDims['y'])
-    cv2.setMouseCallback(CROP_WINDOW_Z_PROJ, selectinwindow.dragrect, rectI)
-
-
-    #cv2.setMouseCallback(CROP_WINDOW_Z_PROJ, click_and_crop)
-    cv2.setMouseCallback(CROP_WINDOW_X_PROJ, click_and_z_crop)
+    CROP_WINDOW_XY_PROJ = "CROP_XY_PROJ"
+    cv2.namedWindow(CROP_WINDOW_XY_PROJ, cv2.WINDOW_NORMAL)
+    cv2.moveWindow(CROP_WINDOW_XY_PROJ, 0, 0)
+    cv2.resizeWindow(CROP_WINDOW_XY_PROJ,GetSystemMetrics(0), GetSystemMetrics(1))
+    cv2.setMouseCallback(CROP_WINDOW_XY_PROJ, click_and_z_crop)
     print("Cropping " + str(scanFullPath))
     while True:
 
         # Render the cropping overlays for next frames
-        #colors = select_cropping_colors()
-        #paint_cropping_overlays(zProj, xProj, colors, stackDims)
+        colors = select_cropping_colors()
+        paint_cropping_overlays(xyProj, colors, stackDims)
 
         # Display the frames with cropping overlays
-        cv2.imshow(CROP_WINDOW_Z_PROJ, zProj)
-        cv2.imshow(CROP_WINDOW_X_PROJ, xProj)
-        cv2.imshow(CROP_WINDOW_Y_PROJ, yProj)
+        cv2.imshow(CROP_WINDOW_XY_PROJ, xyProj)
         key = cv2.waitKey(1) & 0xFF
-        print(rectI.outRect)
 
         # Wipe the overlay so next overlay draw has fresh frame
-        zProj = zProjClone.copy()
-        xProj = xProjClone.copy()
+        xyProj = xyProjClone.copy()
 
         # Check for user keyboard action
         if key == ord("c"):
@@ -239,14 +178,27 @@ def crop3D(scanFullPath, cropFullPath, maskFullPath=None):
             if z0 >= z1:
                 print("Z Crop Error: Bottom cannot be above Top. Try again.")
                 continue
-            elif refPt[0][0] >= refPt[1][0] or refPt[0][1] >= refPt[1][1]:
-                print("XY Crop Error: Drag cropping box starting from top-left of desired crop. Try again.")
-                continue
             else:
-                cv2.destroyAllWindows()
+                cv2.destroyWindow(CROP_WINDOW_XY_PROJ)
                 break
 
-    croppedStack = scan[z0:z1, refPt[0][1]:refPt[1][1], refPt[0][0]:refPt[1][0]]
+
+    # XY Cropping
+    rectI = selectinwindow.dragRect
+    selectinwindow.init(rectI, zProj, CROP_WINDOW_Z_PROJ, stackDims['x'], stackDims['y'])
+    cv2.namedWindow(CROP_WINDOW_Z_PROJ, cv2.WINDOW_NORMAL)
+    cv2.moveWindow(CROP_WINDOW_Z_PROJ, 0, 0)
+    cv2.resizeWindow(CROP_WINDOW_Z_PROJ,GetSystemMetrics(0), GetSystemMetrics(1))
+    cv2.setMouseCallback(CROP_WINDOW_Z_PROJ, selectinwindow.dragrect, rectI)
+    cv2.imshow(CROP_WINDOW_Z_PROJ, zProj)
+    cv2.waitKey(0)
+    x = rectI.outRect.x
+    y = rectI.outRect.y
+    w = rectI.outRect.w
+    h = rectI.outRect.h
+
+    # TODO: Insert draggable ROI box coords here
+    croppedStack = scan[z0:z1, y:y+h, x:x+w]
     croppedStackDims = zsu.gen_stack_dims_dict(croppedStack)
     tifffile.imwrite(cropFullPath, croppedStack)
     zsu.print_crop_dims(croppedStackDims)
